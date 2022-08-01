@@ -3,7 +3,7 @@ Pseudo 3d Render Engine for 2d Planes
 
 > *Requires internet*
 
-> Internet is used to grab images from Imgur (Imgur passes CORS Policy allowing getDataImage from canvas)
+> Internet is used to grab images from Imgur (Imgur passes CORS Policy allowing me to run getImageData on canvas)
 
 - Controls: Arrow keys to move/turn
 - Q : increases "near edge" of vision thrustrum
