@@ -15,3 +15,5 @@ Pseudo 3d Render Engine for 2d Planes
 
 ![image](https://user-images.githubusercontent.com/26506402/182131954-5c6056be-e132-4fd5-bf60-02a72a912ef9.png)
 
+Effectively, I track the user's position on the 2d plane, and draw a trapeziod of vision (Thrustrum). This acts as a sample area for drawing on the canvas. Some conversion is needed to properly map this data with perspective + a vanishing point
+
