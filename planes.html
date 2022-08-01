@@ -1,0 +1,231 @@
+<canvas id="canvas" width="200" height="200"></canvas>
+
+<canvas hidden id  = "canvmap" width ="300" height = "300" ></canvas>
+<img  crossorigin="anonymous" onload="getImageData()" src="https://i.imgur.com/Q1ruNPU.png" id="map" height="1024"
+  hidden></img>
+  <img  crossorigin="anonymous" onload="getSkyData()" src="https://i.imgur.com/aLGCGbt.jpg" id="sky" height="1024"
+  hidden></img>
+
+<script type="text/javascript">
+  var canv = document.getElementById('canvas')
+  var screen_height = canv.height
+  let halfscreen = screen_height>>1
+  var screen_width = canv.width
+  var ctx = canv.getContext('2d');
+  var canvmap = document.getElementById('canvmap')
+  var canvmap_height = canvmap.height
+  var canvmap_width = canvmap.width
+  var ctxmap = canvmap.getContext('2d');
+  var image = document.getElementById('map');
+  var imagedata = []
+  var imagesize = image.height
+  var sky = document.getElementById('sky');
+  var skydata = []
+  var skysize = sky.height
+  let worldx = 470.88
+  let worldy = 908.6
+  let worlda = -3.1
+
+  let near = 0
+  let far = 20
+  let pause = false
+  let FoVHalf = 0.75
+
+
+  
+  function rgba(r, g, b, a = 1) {
+    return `rgba(${r}, ${g}, ${b}, ${a})`
+  }
+  Number.prototype.mod = function (n) {
+  "use strict";
+  return ((this % n) + n) % n;
+};
+  function getImageData() {
+    var canvas = document.createElement("canvas")
+    canvas.id = "canv2"
+    canvas.height = imagesize
+    canvas.width = imagesize
+
+    var context = canvas.getContext('2d');
+
+    context.drawImage(image, 0, 0, imagesize, imagesize);
+    for(var i = 0; i < imagesize; i++) {
+      imagedata.push([])
+    }
+
+    let data = context.getImageData(0, 0, imagesize, imagesize).data;
+    for(var i = 0; i < imagesize*imagesize*4; i+=4) {
+    try {
+      imagedata[Math.floor((i/4)/imagesize)][(i/4) % imagesize] = rgba(data[i],
+                           data[i+1],
+                           data[i+2],
+                           data[i+3])
+                           ;
+    } catch (error) {
+      console.log(error,i,rgba(data[i],
+                           data[i+1],
+                           data[i+2],
+                           data[i+3]), imagesize, i/imagesize, i % imagesize, imagedata[i/imagesize])
+                           
+                           pause = true
+                           return 
+    }
+        
+
+    }
+    
+    
+    return data
+  }
+  function getSkyData() {
+    var canvas = document.createElement("canvas")
+    canvas.id = "canv2"
+    canvas.height = skysize
+    canvas.width = skysize
+
+    var context = canvas.getContext('2d');
+
+    context.drawImage(sky, 0, 0, skysize, skysize);
+    for(var i = 0; i < skysize; i++) {
+      skydata.push([])
+    }
+
+    let data = context.getImageData(0, 0, skysize, skysize).data;
+    for(var i = 0; i < skysize*skysize*4; i+=4) {
+  
+      skydata[Math.floor((i/4)/skysize)][(i/4) % skysize] = rgba(data[i],
+                           data[i+1],
+                           data[i+2],
+                           data[i+3])
+                           ;
+    
+        
+
+    }
+    
+    
+    return data
+  }
+
+  
+  let fps = 30
+  let loop
+  var pressedKeys = {};
+  window.onkeyup = function (e) { pressedKeys[e.keyCode] = false; }
+  window.onkeydown = function (e) { pressedKeys[e.keyCode] = true; }
+
+  function DrawPixel(x, y, color) {
+    ctx.fillStyle = color
+    ctx.fillRect(x, y, 1, 1)
+  }
+  window.onload = function () {
+    loop = setInterval(() => {
+      if(pause) return
+      let plusFOV =  worlda + FoVHalf
+      let minusFOV = worlda - FoVHalf
+      
+      
+      
+      
+      
+      let farx1 =  worldx + (Math.cos(minusFOV) * far)
+      let fary1 =  worldy + (Math.sin(minusFOV) * far)
+
+      let nearx1 = worldx + (Math.cos(minusFOV) * near)
+      let neary1 = worldy + (Math.sin(minusFOV) * near)
+
+      let farx2 =  worldx + (Math.cos(plusFOV) * far)
+      let fary2 =  worldy + (Math.sin(plusFOV) * far)
+
+      let nearx2 = worldx + (Math.cos(plusFOV) * near)
+      let neary2 = worldy + (Math.sin(plusFOV) * near)
+     
+      for (let y = 1; y < halfscreen; y++) {
+        let sampledepth = y /halfscreen
+
+        let startx = ((farx1 - nearx1) /   (sampledepth)) + nearx1
+        let starty =((fary1 - neary1)  /   (sampledepth)) + neary1
+        let endx = ((farx2 - nearx2)   /   (sampledepth)) + nearx2
+        let endy = ((fary2 - neary2)   /   (sampledepth)) + neary2
+        
+        for (let x = 0; x < screen_width; x++) { 
+          let samplewidth = x / (screen_width)
+          let samplex = Math.round((((endx - startx) * samplewidth )+ startx)) 
+          let sampley = Math.round((((endy - starty) * samplewidth )+ starty)) 
+          
+          if(samplex < 0)
+          {
+            samplex = imagesize + (samplex % imagesize)
+          }
+          if(sampley < 0)
+          {sampley = imagesize + (sampley % imagesize)
+            }
+            if (samplex >= imagesize){
+            samplex = samplex % imagesize
+          }
+          if(sampley >= imagesize){
+            sampley = sampley % imagesize
+          } 
+          
+            
+              DrawPixel(x ,  y + halfscreen, imagedata[samplex][sampley])
+              DrawPixel(x ,  halfscreen - y, skydata[samplex][sampley])
+
+
+
+        }
+      }
+      let elapsedTime = 1000/fps
+      //left
+      if(pressedKeys[37]){worlda-=0.001 * elapsedTime}
+      //up
+      if(pressedKeys[38]){worldx += Math.cos(worlda) * 0.2 * elapsedTime
+                          worldy += Math.sin(worlda) * 0.2 * elapsedTime
+      }
+      //right
+      if(pressedKeys[39]){worlda+=0.001 * elapsedTime}
+
+
+      //down
+      if(pressedKeys[40]){worldx -= Math.cos(worlda) * 0.2 * elapsedTime
+                          worldy -= Math.sin(worlda) * 0.2 * elapsedTime}
+      
+      //q
+      if(pressedKeys[81]){near   +=0.1 * elapsedTime}
+      //a   
+      if(pressedKeys[65]){near   -=0.1 * elapsedTime}
+      //w   
+      if(pressedKeys[87]){far    +=0.1 * elapsedTime}
+         
+      //s   
+      if(pressedKeys[83]){far    -=0.1 * elapsedTime}
+      //z
+      if(pressedKeys[90]){FoVHalf+=0.001 * elapsedTime}
+      //x
+      if(pressedKeys[88]){FoVHalf-=0.001 * elapsedTime}
+      if(FoVHalf > Math.PI * 2){FoVHalf = Math.PI * 2}
+      if(FoVHalf < 0) FoVHalf = 0
+
+
+    
+    /*
+      mirrorImage(ctxmap,image,0,0,canvmap_height,false,false)
+    ctxmap.fillStyle= "red"
+    let mapx =     ((worldx%imagesize) / imagesize) * canvmap_width
+    let mapy =     ((worldy%imagesize) / imagesize) * canvmap_height
+    let mapnear =  ((near%imagesize) / imagesize)   * canvmap_width
+    let mapfar  =  ((far%imagesize) / imagesize) * canvmap_width
+
+    ctxmap.fillRect(mapx, mapy, 1, 1)
+    ctxmap.beginPath()
+    ctxmap.moveTo(mapx+ Math.cos(worlda - FoVHalf)*mapnear,mapy+ Math.sin(worlda - FoVHalf)*mapnear)
+    ctxmap.lineTo(mapx + Math.cos(worlda - FoVHalf)*mapfar, mapy + Math.sin(worlda - FoVHalf)*mapfar )
+    ctxmap.stroke()
+    ctxmap.beginPath()
+    ctxmap.moveTo(mapx+ Math.cos(worlda  + FoVHalf)*mapnear,mapy+ Math.sin(worlda  + FoVHalf)*mapnear)
+    ctxmap.lineTo(mapx + Math.cos(worlda + FoVHalf)*mapfar, mapy + Math.sin(worlda + FoVHalf)*mapfar )
+    ctxmap.stroke()
+    */
+    }, 1000 / fps)
+  }
+</script>
