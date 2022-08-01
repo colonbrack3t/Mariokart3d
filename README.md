@@ -1,11 +1,11 @@
 # Mariokart3d
 Pseudo 3d Render Engine for 2d Planes 
 
-*Requires internet*
-Internet is used to grab images from Imgur (Imgur passes CORS Policy allowing getDataImage from canvas)
+> *Requires internet*
 
-Controls: Arrow keys to move/turn
+> Internet is used to grab images from Imgur (Imgur passes CORS Policy allowing getDataImage from canvas)
 
+- Controls: Arrow keys to move/turn
 - Q : increases "near edge" of vision thrustrum
 - A : decreases "near edge" of vision thrustrum
 - W : increases "far edge" of vision thrustrum
