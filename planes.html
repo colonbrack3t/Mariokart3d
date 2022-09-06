@@ -1,8 +1,11 @@
 <canvas id="canvas" width="200" height="200"></canvas>
 
-<canvas hidden id  = "canvmap" width ="300" height = "300" ></canvas>
+<canvas hidden id  = "canvmap" width ="200" height = "200" ></canvas>
 <img  crossorigin="anonymous" onload="getImageData()" src="https://i.imgur.com/Q1ruNPU.png" id="map" height="1024"
-  hidden></img>
+  hidden></img>> 
+  <img  crossorigin="anonymous" onload="getSpeedMapData()" src="https://i.imgur.com/dYcDy8U.png" id="speedmap" height="1024"
+  hidden></img>> 
+
   <img  crossorigin="anonymous" onload="getSkyData()" src="https://i.imgur.com/aLGCGbt.jpg" id="sky" height="1024"
   hidden></img>
 
@@ -26,6 +29,10 @@
   var skydata = []
   var skysize = sky.height
   
+  var speedmap = document.getElementById('speedmap')
+  var speedmapdata = []
+  var speedmapsize = speedmap.height
+
   let worldx = 470.88
   let worldy = 908.6
   let worlda = -3.1
@@ -56,7 +63,7 @@
     let data = context.getImageData(0, 0, size, size).data;
     for(var i = 0; i < size*size*4; i+=4) {
   
-      imgdata[Math.floor((i/4)/size)][(i/4) % size] = rgba(data[i],
+      imgdata[(i/4) % size][Math.floor((i/4)/size)] = rgba(data[i],
                            data[i+1],
                            data[i+2],
                            data[i+3]);
@@ -70,8 +77,11 @@
   }
   function getImageData() {
     imagedata = getDataFromImage(image, imagesize)
+    
   }
-  
+  function getSpeedMapData(){
+    speedmapdata = getDataFromImage(speedmap,speedmapsize)
+  }
   let fps = 30
   let loop
 
@@ -83,8 +93,21 @@
     ctx.fillStyle = color
     ctx.fillRect(x, y, 1, 1)
   }
-
+  function get_rgba_from_str(rgba_str){
+    total = 0
+    arr = [0,0,0,0]
+    str_nums = rgba_str.substring(5, rgba_str.length -1).replaceAll(" ", "").split(',')
+    for (let i =0 ; i < 3; i++)
+    {
+      n = parseInt(str_nums[i])
+      total+=n
+      arr[i]=n
+    }
+    arr[3] = total/(255 + 255 + 255)
+    return arr
+  }
   window.onload = function () {
+ 
     loop = setInterval(() => {
       if(pause) return
       let plusFOV  = worlda + FoVHalf
@@ -140,8 +163,17 @@
       }
       //up
       if(pressedKeys[38]){
-        worldx += Math.cos(worlda) * 0.2 * elapsedTime
-        worldy += Math.sin(worlda) * 0.2 * elapsedTime
+        //check speedmap
+        new_x = worldx  + (Math.cos(worlda) * 0.2 * elapsedTime) 
+        new_y = worldy + (Math.sin(worlda) * 0.2 * elapsedTime)
+        get_speedmap_value = get_rgba_from_str(speedmapdata[Math.round(new_x) %  imagesize][Math.round(new_y) % imagesize])
+        
+        friction_coef = get_speedmap_value[3]
+        new_y *= friction_coef
+        new_x *= friction_coef
+        
+        worldx = new_x
+        worldy = new_y
       }
       //right
       if(pressedKeys[39]){
@@ -185,9 +217,9 @@
       if(FoVHalf < 0) FoVHalf = 0
 
 
-    
     /*
-      mirrorImage(ctxmap,image,0,0,canvmap_height,false,false)
+      ctxmap.drawImage(image,0,0,200,200)
+      
     ctxmap.fillStyle= "red"
     let mapx =     ((worldx%imagesize) / imagesize) * canvmap_width
     let mapy =     ((worldy%imagesize) / imagesize) * canvmap_height
